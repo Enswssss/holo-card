@@ -1,0 +1,18 @@
+{
+  "mode": "holographic",
+  "name_zh": "黑标绅士",
+  "name_en": "NOIR GENTLEMAN",
+  "rarity": "UR",
+  "series": "HOLO · 2026",
+  "art_source": "assets/card.jpg",
+  "art_description": "Hyperrealistic monochrome studio fashion portrait — fit young man in all-black tailored outfit, hands in pockets",
+  "render_route": "web-viewer (Blender unavailable)",
+  "effects": {
+    "foil": 0.55,
+    "glare": true,
+    "particles": 26,
+    "tilt_max_deg": 16,
+    "device_orientation": true
+  },
+  "viewer": "index.html — self-contained, no dependencies"
+}
