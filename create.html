@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holo Card · 创建我的卡</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:#14141a; color:#f5f2e8;
+    font-family:'Segoe UI',system-ui,sans-serif; padding:24px 16px 60px; }
+  header { text-align:center; margin-bottom:22px; }
+  header h1 { font-family:Georgia,serif; font-size:24px; letter-spacing:.2em;
+    background:linear-gradient(120deg,#d4af37,#f5e7a8 45%,#d4af37 80%);
+    -webkit-background-clip:text; background-clip:text; color:transparent; }
+  header p { color:#8d8a80; font-size:12px; letter-spacing:.25em; margin-top:5px;
+    font-family:'JetBrains Mono',monospace; }
+  .wrap { max-width:1060px; margin:0 auto; display:grid;
+    grid-template-columns: 1fr; gap:26px; }
+  @media (min-width:860px){ .wrap { grid-template-columns: 340px 1fr; align-items:start; } }
+  .panel { background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.14);
+    border-radius:14px; padding:20px; }
+  .panel h2 { font-size:13px; letter-spacing:.25em; color:#c9b98a;
+    font-family:'JetBrains Mono',monospace; margin-bottom:16px; }
+  label { display:block; font-size:12px; color:#b8b2a2; margin:14px 0 6px; letter-spacing:.06em; }
+  input[type=text], select {
+    width:100%; padding:10px 12px; border-radius:8px;
+    border:1px solid rgba(255,255,255,.22); background:rgba(0,0,0,.35);
+    color:#f5f2e8; font-size:14px; font-family:inherit; }
+  input[type=text]:focus, select:focus { outline:none; border-color:#d4af37; }
+  input[type=range] { width:100%; accent-color:#d4af37; }
+  .rangeval { float:right; color:#d4af37; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .drop {
+    margin-top:6px; border:1.5px dashed rgba(212,175,55,.5); border-radius:10px;
+    padding:18px 12px; text-align:center; color:#b8b2a2; font-size:13px;
+    cursor:pointer; transition:background .2s;
+  }
+  .drop:hover, .drop.over { background:rgba(212,175,55,.08); }
+  .drop img { max-width:100%; max-height:180px; border-radius:8px; display:block; margin:0 auto 8px; }
+  .row2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .actions { display:flex; gap:12px; margin-top:22px; flex-wrap:wrap; }
+  .btn { padding:12px 22px; border-radius:9px; border:1px solid rgba(212,175,55,.55);
+    background:linear-gradient(120deg, rgba(212,175,55,.2), rgba(245,231,168,.12));
+    color:#f5e7a8; font-size:14px; letter-spacing:.1em; cursor:pointer;
+    text-decoration:none; text-align:center; flex:1; }
+  .btn.ghost { border-color:rgba(255,255,255,.25); background:rgba(255,255,255,.05); color:#cfcaba; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  .preview-stage { width:min(100%, 340px); aspect-ratio:5/7; perspective:1200px;
+    position:relative; margin:0 auto; }
+  .card { width:100%; height:100%; position:relative; transform-style:preserve-3d;
+    transition:transform .08s linear; border-radius:18px; cursor:grab; will-change:transform; }
+  .card:active { cursor:grabbing; }
+  .card-art { position:absolute; inset:0; border-radius:18px; overflow:hidden; background:#111;
+    box-shadow:0 24px 48px rgba(0,0,0,.28),0 4px 12px rgba(0,0,0,.18); }
+  .card-art img.bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    filter:blur(14px) brightness(.55) saturate(1.2); transform:scale(1.1); }
+  .card-art img.fg { position:relative; width:100%; height:100%; object-fit:contain; display:block; }
+  .foil,.glare,.sparkles,.vframe { position:absolute; inset:0; border-radius:18px; pointer-events:none; }
+  .foil { background:repeating-linear-gradient(115deg,
+      hsl(0 90% 60%/.16) 0 12%,hsl(60 90% 55%/.16) 12% 24%,hsl(120 80% 55%/.16) 24% 36%,
+      hsl(180 85% 55%/.16) 36% 48%,hsl(240 85% 62%/.16) 48% 60%,hsl(300 85% 58%/.16) 60% 72%,
+      hsl(360 90% 60%/.16) 72% 84%,hsl(60 90% 55%/.16) 84% 100%);
+    background-size:300% 300%; background-position:var(--foil-x,50%) var(--foil-y,50%);
+    mix-blend-mode:color-dodge; opacity:.55; filter:saturate(1.4); }
+  .glare { background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.06) 42%,
+      rgba(255,255,255,.35) 50%,rgba(255,255,255,.06) 58%,transparent 70%);
+    background-size:250% 250%; background-position:var(--glare-x,50%) var(--glare-y,50%);
+    mix-blend-mode:overlay; }
+  .vframe { border:2px solid rgba(255,255,255,.55); outline:1px solid rgba(0,0,0,.5); outline-offset:-4px; }
+  .plate { position:absolute; left:14px; right:14px; bottom:14px; display:flex;
+    align-items:center; justify-content:space-between; padding:10px 16px; border-radius:10px;
+    background:rgba(10,10,12,.72); backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.22); color:#f5f2e8; transform:translateZ(24px); }
+  .plate .name { font-family:Georgia,serif; font-size:19px; letter-spacing:.12em; }
+  .plate .name small { display:block; font-size:9px; letter-spacing:.28em; color:#b8b2a2; margin-top:2px; }
+  .plate .rarity { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700;
+    padding:3px 10px; border-radius:6px;
+    background:linear-gradient(120deg,#d4af37,#f5e7a8 40%,#b8860b 80%);
+    color:#1a1408; letter-spacing:.1em; box-shadow:0 0 12px rgba(212,175,55,.55); }
+  .top-tag { position:absolute; top:14px; left:14px; font-family:'JetBrains Mono',monospace;
+    font-size:9px; letter-spacing:.3em; color:rgba(255,255,255,.85); background:rgba(0,0,0,.45);
+    padding:4px 8px; border-radius:5px; backdrop-filter:blur(4px); transform:translateZ(20px); }
+  .top-tag.right { left:auto; right:14px;
+    background:linear-gradient(120deg,rgba(212,175,55,.85),rgba(245,231,168,.85));
+    color:#1a1408; font-weight:700; }
+  .hint { color:#9a9a9a; font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    font-family:'JetBrains Mono',monospace; text-align:center; margin-top:14px; }
+  .note { color:#8d8a80; font-size:12px; line-height:1.7; margin-top:16px;
+    border-top:1px dashed rgba(255,255,255,.15); padding-top:14px; }
+  .ok-msg { color:#9ee493; font-size:13px; margin-top:12px; display:none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>创建我的 HOLO 卡</h1>
+  <p>CARD FORGE · 全部在本机完成 · 图片不上传任何服务器</p>
+</header>
+
+<div class="wrap">
+  <!-- 左：表单 -->
+  <div class="panel">
+    <h2>① 填卡面信息</h2>
+    <div class="row2">
+      <div><label>卡名（中文）</label><input type="text" id="f-zh" value="黑标绅士" maxlength="12"></div>
+      <div><label>卡名（英文/拼音）</label><input type="text" id="f-en" value="NOIR GENTLEMAN" maxlength="24"></div>
+    </div>
+    <div class="row2">
+      <div><label>稀有度</label>
+        <select id="f-rarity">
+          <option>N</option><option>R</option><option>SR</option>
+          <option>SSR</option><option selected>UR</option>
+        </select>
+      </div>
+      <div><label>系列名</label><input type="text" id="f-series" value="HOLO · 2026" maxlength="20"></div>
+    </div>
+
+    <h2 style="margin-top:24px">② 上传卡面图</h2>
+    <div class="drop" id="drop">
+      <div id="drop-txt">点击选择 或 把图片拖到这里<br><small>建议竖图 5:7 · jpg/png · 存在你浏览器里，不会外传</small></div>
+    </div>
+    <input type="file" id="file" accept="image/*" hidden>
+
+    <h2 style="margin-top:24px">③ 调全息效果</h2>
+    <label>箔光强度 <span class="rangeval" id="v-foil">55%</span></label>
+    <input type="range" id="f-foil" min="0" max="100" value="55">
+    <label>星芒粒子数 <span class="rangeval" id="v-part">26</span></label>
+    <input type="range" id="f-part" min="0" max="60" value="26">
+    <label>最大倾斜角 <span class="rangeval" id="v-tilt">16°</span></label>
+    <input type="range" id="f-tilt" min="4" max="28" value="16">
+
+    <div class="actions">
+      <button class="btn" id="btn-save">💾 保存到我的卡库</button>
+      <button class="btn ghost" id="btn-export">⬇ 导出独立 HTML</button>
+    </div>
+    <div class="ok-msg" id="ok">✓ 已保存！回到 <a href="index.html" style="color:#f5e7a8">卡厂首页</a> 就能看到它了</div>
+    <div class="note">
+      说明：卡片保存在<strong>本机浏览器</strong>里（localStorage），换设备/清缓存会消失，
+      所以重要卡请「导出 HTML」留底——导出的文件发同学也能直接玩。
+    </div>
+  </div>
+
+  <!-- 右：实时预览 -->
+  <div class="panel">
+    <h2>实时预览 · 拖动卡面试试</h2>
+    <div class="preview-stage">
+      <div class="card" id="card">
+        <div class="card-art">
+          <img class="bg" id="p-bg" alt="" draggable="false">
+          <img class="fg" id="p-fg" alt="" draggable="false">
+        </div>
+        <div class="foil" id="foil"></div><div class="glare" id="glare"></div>
+        <div class="sparkles"><canvas id="spark"></canvas></div>
+        <div class="vframe"></div>
+        <div class="top-tag" id="p-series">HOLO · 2026</div>
+        <div class="top-tag right" id="p-stars">UR ★★★★★</div>
+        <div class="plate">
+          <div class="name"><span id="p-zh">黑标绅士</span><small id="p-en">NOIR GENTLEMAN</small></div>
+          <div class="rarity" id="p-rarity">UR</div>
+        </div>
+      </div>
+    </div>
+    <div class="hint">移动指针 / 触摸倾斜 · tilt to reveal foil</div>
+  </div>
+</div>
+
+<script>
+const LS_KEY = 'holo_cards_v1';
+const RARITY_STARS = { N:'★', R:'★★', SR:'★★★', SSR:'★★★★', UR:'★★★★★' };
+const state = { img: null };
+
+const $ = id => document.getElementById(id);
+const card=$('card'), foil=$('foil'), glare=$('glare'), stage=card.parentElement;
+let MAX = 16, tx=0, ty=0;
+
+function setTilt(px, py) {
+  tx = px; ty = py;
+  card.style.transform = `rotateX(${-py*MAX}deg) rotateY(${px*MAX}deg) scale(1.02)`;
+  foil.style.setProperty('--foil-x', (50+px*60)+'%');
+  foil.style.setProperty('--foil-y', (50+py*60)+'%');
+  glare.style.setProperty('--glare-x', (50-px*80)+'%');
+  glare.style.setProperty('--glare-y', (50-py*80)+'%');
+}
+stage.addEventListener('pointermove', e => {
+  const r = stage.getBoundingClientRect();
+  setTilt(((e.clientX-r.left)/r.width)*2-1, ((e.clientY-r.top)/r.height)*2-1);
+});
+stage.addEventListener('pointerleave', () => {
+  card.style.transition = 'transform .5s cubic-bezier(.2,.8,.2,1)';
+  card.style.transform = 'rotateX(0) rotateY(0) scale(1)';
+  setTimeout(() => card.style.transition = 'transform .08s linear', 500);
+});
+
+/* sparkles */
+const cv=$('spark'), ctx=cv.getContext('2d'); let W,H;
+function resize(){ const r=cv.parentElement.getBoundingClientRect(); W=cv.width=r.width; H=cv.height=r.height; }
+resize(); window.addEventListener('resize', resize);
+const stars = Array.from({length:26},()=>({x:Math.random(),y:Math.random(),r:.6+Math.random()*1.6,p:Math.random()*Math.PI*2,s:.4+Math.random()*1.2}));
+let t0=performance.now();
+(function loop(t){ const dt=(t-t0)/1000; t0=t;
+  ctx.clearRect(0,0,W,H);
+  const energy=Math.min(1,Math.hypot(tx,ty)*1.6);
+  for(const s of stars){ s.p+=dt*s.s*2;
+    const a=(Math.sin(s.p)*.5+.5)*(.25+energy*.75);
+    const x=s.x*W+tx*14*s.s, y=s.y*H+ty*14*s.s;
+    const g=ctx.createRadialGradient(x,y,0,x,y,s.r*4);
+    g.addColorStop(0,`rgba(255,255,255,${a})`); g.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,s.r*4,0,Math.PI*2); ctx.fill();
+    ctx.strokeStyle=`rgba(255,255,255,${a*.6})`; ctx.lineWidth=.6;
+    ctx.beginPath(); ctx.moveTo(x-s.r*3,y); ctx.lineTo(x+s.r*3,y);
+    ctx.moveTo(x,y-s.r*3); ctx.lineTo(x,y+s.r*3); ctx.stroke(); }
+  requestAnimationFrame(loop); })(t0);
+
+/* ===== live binding ===== */
+function syncPreview() {
+  $('p-zh').textContent = $('f-zh').value || '未命名卡';
+  $('p-en').textContent = $('f-en').value.toUpperCase();
+  $('p-rarity').textContent = $('f-rarity').value;
+  $('p-series').textContent = $('f-series').value || 'HOLO';
+  $('p-stars').textContent = $('f-rarity').value + ' ' + RARITY_STARS[$('f-rarity').value];
+  foil.style.opacity = $('f-foil').value / 100;
+}
+['f-zh','f-en','f-rarity','f-series'].forEach(id => $(id).addEventListener('input', syncPreview));
+$('f-foil').addEventListener('input', () => { $('v-foil').textContent = $('f-foil').value+'%'; foil.style.opacity = $('f-foil').value/100; });
+$('f-part').addEventListener('input', () => { $('v-part').textContent = $('f-part').value; });
+$('f-tilt').addEventListener('input', () => { $('v-tilt').textContent = $('f-tilt').value+'°'; MAX = +$('f-tilt').value; });
+
+/* ===== image upload ===== */
+const drop=$('drop'), file=$('file');
+drop.addEventListener('click', () => file.click());
+['dragover','dragenter'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+file.addEventListener('change', () => handleFiles(file.files));
+function handleFiles(files) {
+  const f = files && files[0]; if (!f || !f.type.startsWith('image/')) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    state.img = rd.result;
+    $('p-bg').src = state.img; $('p-fg').src = state.img;
+    $('drop-txt').innerHTML = '<img src="'+state.img+'">已加载 · 可拖动右侧预览';
+  };
+  rd.readAsDataURL(f);
+}
+
+/* ===== collect / validate ===== */
+function collect() {
+  return {
+    id: 'c' + Date.now().toString(36),
+    name_zh: $('f-zh').value.trim() || '未命名卡',
+    name_en: ($('f-en').value.trim() || 'UNTITLED').toUpperCase(),
+    rarity: $('f-rarity').value,
+    series: $('f-series').value.trim() || 'HOLO',
+    img: state.img || 'assets/card.jpg',
+    foil: $('f-foil').value / 100,
+    particles: +$('f-part').value,
+    tilt_max_deg: +$('f-tilt').value,
+    created: new Date().toISOString()
+  };
+}
+
+/* ===== save to localStorage ===== */
+$('btn-save').addEventListener('click', () => {
+  const c = collect();
+  const mine = (()=>{ try{ return JSON.parse(localStorage.getItem(LS_KEY)||'[]'); }catch{ return []; } })();
+  mine.push(c);
+  try { localStorage.setItem(LS_KEY, JSON.stringify(mine)); }
+  catch { return alert('浏览器存储满了（图片太多啦）。删掉几张旧卡再试，或直接用「导出 HTML」留底。'); }
+  $('ok').style.display = 'block';
+  setTimeout(() => $('ok').style.display = 'none', 4000);
+});
+
+/* ===== standalone export (same builder as index.html) ===== */
+$('btn-export').addEventListener('click', () => {
+  const c = collect();
+  if (!state.img) return alert('先上传一张卡面图再导出');
+  downloadStandalone(c, state.img);
+});
+
+function downloadStandalone(c, imgDataUrl) {
+  const html = buildStandalone(c, imgDataUrl);
+  const blob = new Blob([html], {type:'text/html'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `holo_${c.name_en}.html`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+
+function buildStandalone(c, imgB64) {
+  return `<!DOCTYPE html>
+<html lang="zh"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Holo Card · ${c.name_zh}</title>
+<style>
+  :root { --card-w: min(88vw, 380px); --card-h: calc(var(--card-w) * 1.4); }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { min-height:100vh; background:#14141a; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:22px; padding:24px 16px;
+    font-family:'Segoe UI',system-ui,sans-serif; }
+  .stage { width:var(--card-w); height:var(--card-h); perspective:1200px; position:relative; }
+  .card { width:100%; height:100%; position:relative; transform-style:preserve-3d;
+    transition:transform .08s linear; border-radius:18px; cursor:grab; will-change:transform; }
+  .card:active { cursor:grabbing; }
+  .card-art { position:absolute; inset:0; border-radius:18px; overflow:hidden; background:#111;
+    box-shadow:0 24px 48px rgba(0,0,0,.28),0 4px 12px rgba(0,0,0,.18); }
+  .card-art img.bg { position:absolute; inset:0; width:100%; height:100%; object-fit:cover;
+    filter:blur(14px) brightness(.55) saturate(1.2); transform:scale(1.1); }
+  .card-art img.fg { position:relative; width:100%; height:100%; object-fit:contain; display:block; }
+  .foil,.glare,.sparkles,.vframe { position:absolute; inset:0; border-radius:18px; pointer-events:none; }
+  .foil { background:repeating-linear-gradient(115deg,
+      hsl(0 90% 60%/.16) 0 12%,hsl(60 90% 55%/.16) 12% 24%,hsl(120 80% 55%/.16) 24% 36%,
+      hsl(180 85% 55%/.16) 36% 48%,hsl(240 85% 62%/.16) 48% 60%,hsl(300 85% 58%/.16) 60% 72%,
+      hsl(360 90% 60%/.16) 72% 84%,hsl(60 90% 55%/.16) 84% 100%);
+    background-size:300% 300%; background-position:var(--foil-x,50%) var(--foil-y,50%);
+    mix-blend-mode:color-dodge; opacity:${c.foil ?? .55}; filter:saturate(1.4); }
+  .glare { background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,.06) 42%,
+      rgba(255,255,255,.35) 50%,rgba(255,255,255,.06) 58%,transparent 70%);
+    background-size:250% 250%; background-position:var(--glare-x,50%) var(--glare-y,50%);
+    mix-blend-mode:overlay; }
+  .vframe { border:2px solid rgba(255,255,255,.55); outline:1px solid rgba(0,0,0,.5); outline-offset:-4px; }
+  .plate { position:absolute; left:14px; right:14px; bottom:14px; display:flex;
+    align-items:center; justify-content:space-between; padding:10px 16px; border-radius:10px;
+    background:rgba(10,10,12,.72); backdrop-filter:blur(6px);
+    border:1px solid rgba(255,255,255,.22); color:#f5f2e8; transform:translateZ(24px); }
+  .plate .name { font-family:Georgia,serif; font-size:19px; letter-spacing:.12em; }
+  .plate .name small { display:block; font-size:9px; letter-spacing:.28em; color:#b8b2a2; margin-top:2px; }
+  .plate .rarity { font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:700;
+    padding:3px 10px; border-radius:6px;
+    background:linear-gradient(120deg,#d4af37,#f5e7a8 40%,#b8860b 80%);
+    color:#1a1408; letter-spacing:.1em; box-shadow:0 0 12px rgba(212,175,55,.55); }
+  .top-tag { position:absolute; top:14px; left:14px; font-family:'JetBrains Mono',monospace;
+    font-size:9px; letter-spacing:.3em; color:rgba(255,255,255,.85); background:rgba(0,0,0,.45);
+    padding:4px 8px; border-radius:5px; backdrop-filter:blur(4px); transform:translateZ(20px); }
+  .top-tag.right { left:auto; right:14px;
+    background:linear-gradient(120deg,rgba(212,175,55,.85),rgba(245,231,168,.85));
+    color:#1a1408; font-weight:700; }
+  .hint { color:#9a9a9a; font-size:12px; letter-spacing:.18em; text-transform:uppercase;
+    font-family:'JetBrains Mono',monospace; }
+</style></head><body>
+<div class="stage"><div class="card" id="card">
+  <div class="card-art">
+    <img class="bg" src="${imgB64}" alt="" draggable="false">
+    <img class="fg" src="${imgB64}" alt="" draggable="false">
+  </div>
+  <div class="foil" id="foil"></div><div class="glare" id="glare"></div>
+  <div class="sparkles"><canvas id="spark"></canvas></div>
+  <div class="vframe"></div>
+  <div class="top-tag">${c.series}</div>
+  <div class="top-tag right">${c.rarity} ${(RARITY_STARS[c.rarity]||'')}</div>
+  <div class="plate"><div class="name">${c.name_zh}<small>${c.name_en}</small></div>
+    <div class="rarity">${c.rarity}</div></div>
+</div></div>
+<div class="hint">移动指针 / 触摸倾斜 · tilt to reveal foil</div>
+<script>
+(() => {
+  const card=document.getElementById('card'),foil=document.getElementById('foil'),
+        glare=document.getElementById('glare'),stage=card.parentElement,MAX=${c.tilt_max_deg || 16};
+  function setTilt(px,py){ry=px*MAX;rx=-py*MAX;
+    card.style.transform=\`rotateX(\${rx}deg) rotateY(\${ry}deg) scale(1.02)\`;
+    foil.style.setProperty('--foil-x',(50+px*60)+'%');
+    foil.style.setProperty('--foil-y',(50+py*60)+'%');
+    glare.style.setProperty('--glare-x',(50-px*80)+'%');
+    glare.style.setProperty('--glare-y',(50-py*80)+'%');}
+  stage.addEventListener('pointermove',e=>{const r=stage.getBoundingClientRect();
+    setTilt(((e.clientX-r.left)/r.width)*2-1,((e.clientY-r.top)/r.height)*2-1);});
+  stage.addEventListener('pointerleave',()=>{card.style.transition='transform .5s cubic-bezier(.2,.8,.2,1)';
+    card.style.transform='rotateX(0) rotateY(0) scale(1)';
+    setTimeout(()=>card.style.transition='transform .08s linear',500);});
+  window.addEventListener('deviceorientation',e=>{
+    const px=Math.max(-1,Math.min(1,(e.gamma||0)/40)),py=Math.max(-1,Math.min(1,((e.beta||0)-45)/40));
+    setTilt(px,py);});
+  const cv=document.getElementById('spark'),ctx=cv.getContext('2d');let W,H;
+  function resize(){const r=cv.parentElement.getBoundingClientRect();W=cv.width=r.width;H=cv.height=r.height;}
+  resize();window.addEventListener('resize',resize);
+  const stars=Array.from({length:${c.particles || 26}},()=>({x:Math.random(),y:Math.random(),
+    r:.6+Math.random()*1.6,p:Math.random()*Math.PI*2,s:.4+Math.random()*1.2}));
+  let t0=performance.now(),tx=0,ty=0;
+  const _set=setTilt;setTilt=function(px,py){tx=px;ty=py;_set(px,py);};
+  (function loop(t){const dt=(t-t0)/1000;t0=t;
+    ctx.clearRect(0,0,W,H);
+    const energy=Math.min(1,Math.hypot(tx,ty)*1.6);
+    for(const s of stars){s.p+=dt*s.s*2;
+      const a=(Math.sin(s.p)*.5+.5)*(.25+energy*.75);
+      const x=s.x*W+tx*14*s.s,y=s.y*H+ty*14*s.s;
+      const g=ctx.createRadialGradient(x,y,0,x,y,s.r*4);
+      g.addColorStop(0,\`rgba(255,255,255,\${a})\`);g.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,s.r*4,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle=\`rgba(255,255,255,\${a*.6})\`;ctx.lineWidth=.6;
+      ctx.beginPath();ctx.moveTo(x-s.r*3,y);ctx.lineTo(x+s.r*3,y);
+      ctx.moveTo(x,y-s.r*3);ctx.lineTo(x,y+s.r*3);ctx.stroke();}
+    requestAnimationFrame(loop);})(t0);
+})();
+<\/script>
+</body></html>`;
+}
+
+/* init preview with builtin art */
+$('p-bg').src = 'assets/card.jpg'; $('p-fg').src = 'assets/card.jpg';
+syncPreview();
+</script>
+</body>
+</html>
